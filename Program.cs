@@ -1,47 +1,33 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-using System;
+﻿using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
-namespace lab4
+namespace lab6
 {
     internal class Program
     {
-        static int[] Sort(int[] arr)
-        {          
-            int min;
-            int n_min;
-            int j;
-            for (int i = 0; i < arr.Length - 1; i++)
-            {
-                min = arr[i];
-                n_min = i;
-                for (j = i + 1; j < arr.Length; j++)
-                {
-                    if (arr[j] < min)
-                    {
-                        min = arr[j];
-                        n_min = j;
-                        arr[n_min] = arr[i];
-                        arr[i] = min;
-                    }
-                }
-            }
-            return arr;
-        }
-        static int GetLength()
+        static void PrintMenu(string str)
         {
-            int length;
-            bool isConvert;
-            do
+            if (str == "Главное меню")
             {
-                Console.WriteLine("Ведите количество элементов массива");//длина массива
-                string buf = Console.ReadLine();
-                isConvert = int.TryParse(buf, out length);
-                if (!isConvert || length < 0)
-                {
-                    Console.WriteLine("Неправильно введено число. Попробуйте ещё раз.");
-                }
-            } while (!isConvert || length < 0);
-            return length;
+                Console.WriteLine("1.Перевернуть все слова в предложении и отсортировать слова по убыванию в лексикографическом порядке.");
+                Console.WriteLine("2.Выход");
+            }
+            else if (str == "Меню создания")
+            {
+                Console.WriteLine("\n1.Использовать предложенный текст");
+                Console.WriteLine("2.Ввести предложения вручную");
+                Console.WriteLine("3.Назад");
+            }
+            else if (str == "Выход")
+            {
+                Console.WriteLine("\nВы действительно хотите завершить работу?");
+                Console.WriteLine("1.Да");
+                Console.WriteLine("2.Нет");
+            }
         }
         static int GetNumber()
         {
@@ -58,244 +44,234 @@ namespace lab4
             } while (!isConvert);
             return number;
         }
-        static void Main(string[] args)
+        static void SortWord(string text = "В лесу родилась елочка! В лесу она росла.")
         {
-            int answer;
-            bool isConvertAnsw;
-            int length;
-            int number;
-            int[] arr = new int[0];
+            string newStr = String.Empty;
+            text = text.Replace("+", "");
+            Console.WriteLine($"Исходный текст: {text}");
+            string textNew = text.Replace(".", " . ").Replace("?", " ? ").Replace("!", " ! ").Replace(",", " , ").Replace(":", " : ").Replace(";", " ; ").Trim();
+            textNew = Regex.Replace(textNew, "\\s+", "+");
+            string[] a = textNew.Split('+');
+            int k = 0;
+            foreach (string word in a)
+            {
+                if (word == "")
+                    k++;
+            }
+            string[] tmp = new string[a.Length - k];
+            for (int i = 0, j = 0; i < a.Length; i++)
+            {
+                if (a[i] != "")
+                {
+                    tmp[j] = a[i];
+                    j++;
+                }
+            }
+            for (int i = 0; i < a.Length; i++)
+            {
+                char[] array = a[i].ToCharArray();
+                Array.Reverse(array);
+                newStr += new String(array);
+                if (i < a.Length - 1)
+                    newStr += ' ';
+
+            }
+            newStr = newStr.Replace(" ,", ",").Replace(" :", ":").Replace(" ;", ";");
+            string[] revSentences = newStr.Replace(".", ".+").Replace("!", "!+").Replace("?", "?+").Split('+');
+            int m = 0;
+            foreach (string word in revSentences)
+            {
+                if (word == "")
+                    m++;
+            }
+            string[] t = new string[revSentences.Length - m];
+            for (int i = 0, j = 0; i < revSentences.Length; i++)
+            {
+                if (revSentences[i] != "")
+                {
+                    t[j] = revSentences[i];
+                    j++;
+                }
+            }
+            string result = String.Empty;
+            foreach (string s in t)
+            {
+                int count1 = s.ToCharArray().Count(c => c == '.');
+                int count2 = s.ToCharArray().Count(c => c == '!');
+                int count3 = s.ToCharArray().Count(c => c == '?');
+                string sentence = s.Trim();
+                string[] words = sentence.Split(" ");
+                for (int j = 1; j < words.Length; j++)
+                {
+                    for (int w = words.Length - 1; w >= j; w--)
+                    {
+                        if (words[w].CompareTo(words[w - 1]) < 0)
+                        {
+                            string temp = words[w];
+                            words[w] = words[w - 1];
+                            words[w - 1] = temp;
+                        }
+                    }
+                }
+                foreach (string word in words)
+                {
+                    if(word != "!" && word != "." && word != "?")
+                    {
+                        result += word;
+                        result += " ";
+                    }
+                }
+                result = result.Trim();
+                if (count1 > 0)
+                    result += ". ";
+                else if(count2 > 0)
+                    result += "! ";
+                else if (count3 > 0)
+                    result += "? ";
+            }
+            Console.WriteLine($"Полученный текст: {result}");
+        }
+        static bool CorrectInput(ref string inputStr)
+        {
+            inputStr = inputStr.Replace(".", ".+").Replace("!", "!+").Replace("?", "?+");
+            bool gd = true;
+            StringBuilder sb = new StringBuilder();
+            Regex sample = new Regex(@"^[А-Я][^.!?]*[.!?]$");
+            string[] sentences = inputStr.Split("+");
+            if (sentences[^1] == " " || sentences[^1] == "")
+                Array.Resize(ref sentences, sentences.Length - 1);
+            for (int i = 0; i < sentences.Length; i++)
+            {
+                string sentence = sentences[i].Trim();
+                if (sample.IsMatch(sentence) != true)
+                {
+                    gd = false;
+                }
+            }
+            if (gd)
+                return true;
+            else
+                return false;
+        }
+        static bool EmptyStr(ref string inputStr)
+        {
+            bool gd = true;
+            int count = 0;
+            string test = inputStr.Replace(" ", "+");
+            foreach (char ch in test)
+            {
+                if (ch == '+')
+                    count++;
+            }
+            if (inputStr.Length == 0 || inputStr == null || inputStr.Contains("\t") || (count == inputStr.Length))
+                gd = false;
+            if (gd)
+                return true;
+            else
+                return false;
+        }
+        static string ManualInput()
+        {
+            string inputStr;
+            bool isCorrect, isEmpty;
             do
             {
-                Console.WriteLine("1.Ввести элементы массива");
-                Console.WriteLine("2.Сформировать массив с помощью ДСЧ");
-                Console.WriteLine("3.Напечатать массив");
-                Console.WriteLine("4.Удалить из массива все четные элементы");
-                Console.WriteLine("5.Добавить N элементов, начиная с номера K");
-                Console.WriteLine("6.Сдвинуть циклически на M элементов вправо");
-                Console.WriteLine("7.Поиск элемента с заданным значением");
-                Console.WriteLine("8.Сортировка массива простым выбором");
-                Console.WriteLine("9.Бинарный поиск элемента");
-                Console.WriteLine("10.Вывод");
-                Console.WriteLine("\nВыберите пункт меню");
-                do
+                Console.WriteLine("Введите предложение:");
+                inputStr = Console.ReadLine();
+                isCorrect = CorrectInput(ref inputStr);
+                isEmpty = EmptyStr(ref inputStr);
+                if (!isEmpty)
                 {
-                    string buf = Console.ReadLine();
-                    isConvertAnsw = int.TryParse(buf, out answer);
-                    if (!isConvertAnsw)
-                    {
-                        Console.WriteLine("Неправильно введено число. Попробуйте ещё раз.");
-                    }
-                }while (!isConvertAnsw);
-                switch (answer)
+                    Console.WriteLine("Нельзя ввести пустую строку. Попробуйте ещё раз.\n");
+                }
+                else if (!isCorrect)
                 {
-                    case 1://ввод элементов массива вручную
+                    Console.WriteLine("Предложение должно начинаться с заглавной буквы и оканчиваться знаком окончания предложения. Попробуйте ещё раз.\n");
+                }
+            } while (isCorrect == false);
+            return inputStr;
+        }
+        static void Main(string[] args)
+        {
+            int ans;
+            do
+            {
+                PrintMenu("Главное меню");
+                Console.WriteLine("\nВведите номер пункта меню");
+                ans = GetNumber();
+                switch (ans)
+                {
+                    case 1:
                         {
-                            length = GetLength();
-                            arr = new int[length];
-                            for (int i = 0; i < length; i++)
-                            {
-                                Console.WriteLine($"Введите элемент {i+1}");   
-                                arr[i] = GetNumber();
-                            }
-                            Console.WriteLine("Массив сформирован\n");
-                            break;
-                        }
-                    case 2://ДСЧ
-                        {
-                            length = GetLength();
-                            arr = new int[length];
-                            for (int i = 0; i < length; i++)
-                            {
-                                Random a = new Random();
-                                arr[i] = a.Next(-100, 100);
-                            }
-                            Console.WriteLine("Массив сформирован\n");
-                            break;
-                        }
-                    case 3://Напечатать массив
-                        {
-                            if (arr.Length == 0)
-                                Console.WriteLine("Массив пуст\n");
-                            foreach (int item in arr)
-                                Console.Write(item + " ");
-                            Console.WriteLine();
-                            break;
-                        }
-                    case 4://Удаление четных элементов
-                        {
-                            int count = 0;
-                            foreach (int item in arr) //кол-во нечетных элементов
-                                if (item % 2 != 0)
-                                    count++;
-                            int[] temp = new int[count];//удаляем четные
-                            int j = 0;//счетчик в temp
-                            for (int i = 0; i < arr.Length; i++)
-                            {
-                                if (arr[i] % 2 != 0)
-                                {
-                                    temp[j++] = arr[i];
-                                }
-                            }
-                            if (arr.Length == 0)
-                                Console.WriteLine("Массив пуст\n");
-                            else
-                            {
-                                if (arr.Length == temp.Length)
-                                    Console.WriteLine("Чётные элементы не найдены\n");
-                                else
-                                    Console.WriteLine("Чётные элементы удалены\n");
-                            }
-                            arr = temp;
-                            break;
-                        }
-                    case 5://добавление N элементов с номера K
-                        {
-                            int k;
-                            bool isConvert;
+                            Console.Clear();
                             do
                             {
-                                Console.WriteLine("Введите с какого номера вы хотите добавить элементы");
-                                string buf = Console.ReadLine();
-                                isConvert = int.TryParse(buf, out k);
-                                if (!isConvert || arr.Length-1 < k || k <= 0)
+                                PrintMenu("Меню создания");
+                                Console.WriteLine("\nВведите номер пункта меню");
+                                ans = GetNumber();
+                                switch (ans)
                                 {
-                                    Console.WriteLine("Неправильно введено число или число выходит за длину массива. Попробуйте ещё раз.");
+                                    case 1:
+                                        {
+                                            Console.Clear();
+                                            SortWord();
+                                            break;
+                                        }
+                                    case 2://вручную
+                                        {
+                                            Console.Clear();
+                                            SortWord(ManualInput());
+                                            break;
+                                        }
+                                    case 3:
+                                        {
+                                            break;
+                                        }
+                                    default:
+                                        {
+                                            Console.WriteLine("\nНеверно задан пункт меню");
+                                            break;
+                                        }
                                 }
-                            } while (!isConvert || arr.Length < k || k <= 0);
-                            int n;
-                            do
-                            {
-                                Console.WriteLine("Ведите количество элементов для добавления");
-                                string buf = Console.ReadLine();
-                                isConvert = int.TryParse(buf, out n);
-                                if (!isConvert || n < 0)
-                                {
-                                    Console.WriteLine("Неправильно введено число. Попробуйте ещё раз.");
-                                }
-                            } while (!isConvert || n < 0);
-                            int[] arrNew = new int[arr.Length + n];
-                            for (int i = k-1; i < k+n-1; i++)
-                            {
-                                Console.WriteLine($"Введите элемент {i + 1}");   
-                                arrNew[i] = GetNumber();
-                            }
-                            int j = 0;
-                            for (int z = 0; z < k-1; z++)
-                            {
-                                arrNew[z] = arr[j++];
-                            }
-                            for (int z = k+n-1; z < arrNew.Length; z++)
-                            {
-                                arrNew[z] = arr[j++];
-                            }
-                            arr = arrNew;
-                            Console.WriteLine("Добавление выполнено\n");
+                            } while (ans != 3);
                             break;
                         }
-                    case 6:// сдвиг на M элементов вправо
+                    case 2:
                         {
-                            if (arr.Length == 0)
-                                Console.WriteLine("Массив пуст\n");
-                            else
+                            Console.Clear();
+                            PrintMenu("Выход");
+                            Console.WriteLine("\nВведите номер пункта меню");
+                            ans = GetNumber();
+                            switch (ans)
                             {
-                                int m;
-                                bool isConvert;
-                                do
-                                {
-                                    Console.WriteLine("Введите неотрицательное число на сколько элементов вы хотите сдвинуть вправо");
-                                    string buf = Console.ReadLine();
-                                    isConvert = int.TryParse(buf, out m);
-                                    if (!isConvert || m <= 0 || m > arr.Length)
+                                case 1://Да
                                     {
-                                        Console.WriteLine("Неправильно введено число или оно превышает длину. Попробуйте ещё раз.");
-                                    }
-                                } while (!isConvert || m <= 0 || m > arr.Length);
-                                int[] arrNew = new int[arr.Length];
-                                int j = 0;
-                                for (int i = 0; i < arr.Length - m; i++)
-                                {
-                                    arrNew[j + m] = arr[i];
-                                    j++;
-                                }
-                                for (int i = arr.Length - m, g = 0; i < arr.Length; i++, g++)
-                                {
-                                    arrNew[g] = arr[i];
-                                }
-                                arr = arrNew;
-                                Console.WriteLine($"Массив сдвинулся на {m} элемент(а/ов) вправо\n");
-                            }
-                            break;
-                        } 
-                    case 7://поиск элемента
-                        {
-                            if (arr.Length == 0)
-                                Console.WriteLine("Массив пуст\n");
-                            else
-                            {
-                                Console.WriteLine("Введите элемент массива для поиска");//ввод числа для поиска
-                                number = GetNumber();
-                                int index = -1;//поиск
-                                for (int i = 0; i < arr.Length; i++)
-                                {
-                                    if (arr[i] == number)
-                                    {
-                                        index = i;
+                                        Console.Clear();
+                                        Console.WriteLine("\nПрограмма завершена");
+                                        System.Environment.Exit(0);
                                         break;
                                     }
-                                }
-                                if (index < 0)
-                                    Console.WriteLine("Число не найдено\n");
-                                else
-                                    Console.WriteLine($"{number} находится в массиве под номером {index + 1}\n");
+                                case 2://Нет
+                                    {
+                                        Console.Clear();
+                                        break;
+                                    }
+                                default:
+                                    {
+                                        Console.Clear();
+                                        Console.WriteLine("\nНеверно задан пункт меню");
+                                        break;
+                                    }
                             }
-                            break;
-                        }
-                    case 8://сортировка простой выбор
-                        {
-                            if (arr.Length == 0)
-                                Console.WriteLine("Массив пуст\n");
-                            else
-                            {
-                                Sort(arr);
-                                Console.WriteLine("Сортировка выполнена\n");
-                            }
-                            break;
-                        }
-                    case 9://Бинарный поиск элемента
-                        {
-                            Sort(arr);
-                            Console.WriteLine("Введите элемент массива для поиска");//ввод числа для поиска
-                            number = GetNumber();    
-                            int left = 0;
-                            int right = arr.Length - 1;
-                            int sred;
-                            do
-                            {
-                                sred = (left + right) / 2;
-                                if (arr[sred] < number)
-                                    left = sred + 1;
-                                else
-                                    right = sred;
-                            } while (left != right);
-                            if (arr[left] == number)
-                                Console.WriteLine($"{number} находится под номером {left+1}\n");
-                            else
-                                Console.WriteLine("Элемент не найден\n");
-                            break;
-                        }
-                    case 10:
-                        {
-                            Console.WriteLine("Работа завершена");
                             break;
                         }
                     default:
                         {
-                            Console.WriteLine("Неверно задан пункт меню");
+                            Console.WriteLine("\nНеверно задан пункт меню");
                             break;
                         }
                 }
-            }while (answer!=10);
+            } while (ans != 2);
         }
     }
 }
